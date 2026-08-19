@@ -18,9 +18,21 @@ function useSelect() {
 
 const Select = ({ value, onValueChange, children }: any) => {
     const [open, setOpen] = React.useState(false)
+    const containerRef = React.useRef<HTMLDivElement>(null)
+
+    React.useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+                setOpen(false)
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [])
+
     return (
         <Context.Provider value={{ value, onValueChange, open, setOpen }}>
-            <div className="relative w-full">{children}</div>
+            <div ref={containerRef} className="relative w-full z-40">{children}</div>
         </Context.Provider>
     )
 }
@@ -33,13 +45,13 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttrib
             type="button"
             onClick={() => setOpen(!open)}
             className={cn(
-                "flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50",
+                "flex h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#603DD9]/20 disabled:cursor-not-allowed disabled:opacity-50 font-medium transition-colors",
                 className
             )}
             {...props}
         >
             {children}
-            <span className="ml-2 opacity-50">▼</span>
+            <span className="ml-2 text-xs text-slate-400">▼</span>
         </button>
     )
 })
@@ -54,8 +66,8 @@ const SelectContent = ({ children, className }: any) => {
     const { open } = useSelect()
     if (!open) return null
     return (
-        <div className={cn("absolute z-50 min-w-[8rem] overflow-hidden rounded-md border bg-white text-slate-950 shadow-md animate-in fade-in-80 w-full mt-1", className)}>
-            <div className="p-1 max-h-60 overflow-y-auto">{children}</div>
+        <div className={cn("absolute z-50 min-w-[8rem] overflow-hidden rounded-xl border border-slate-200/90 bg-white text-slate-950 shadow-xl shadow-purple-500/10 animate-slide-in w-full mt-1.5", className)}>
+            <div className="p-1 max-h-60 overflow-y-auto space-y-0.5">{children}</div>
         </div>
     )
 }
@@ -66,8 +78,8 @@ const SelectItem = React.forwardRef<HTMLDivElement, any>(({ className, children,
         <div
             ref={ref}
             className={cn(
-                "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-                value === selectedValue && "bg-slate-100 font-medium",
+                "relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-8 pr-2 text-xs font-semibold outline-none hover:bg-[#603DD9]/10 hover:text-[#603DD9] transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+                value === selectedValue && "bg-[#603DD9]/10 text-[#603DD9] font-bold",
                 className
             )}
             onClick={(e) => {
@@ -77,7 +89,7 @@ const SelectItem = React.forwardRef<HTMLDivElement, any>(({ className, children,
             }}
             {...props}
         >
-            <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+            <span className="absolute left-2.5 flex h-3.5 w-3.5 items-center justify-center text-[#603DD9]">
                 {value === selectedValue && <span>✓</span>}
             </span>
             {children}

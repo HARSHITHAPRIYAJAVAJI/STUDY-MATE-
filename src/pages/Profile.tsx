@@ -54,15 +54,15 @@ export function Profile() {
                     // Fetch Real Stats in parallel
                     const [docsRes, sessionsRes, quizzesRes] = await Promise.all([
                         supabase.from('documents').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-                        supabase.from('focus_sessions').select('duration_minutes').eq('user_id', user.id),
+                        supabase.from('study_sessions').select('duration').eq('user_id', user.id),
                         supabase.from('quizzes').select('score').eq('user_id', user.id)
                     ])
 
                     const docCount = docsRes.count || 0
 
-                    // Calculate total study hours (minutes / 60)
-                    const totalMinutes = sessionsRes.data?.reduce((acc, curr) => acc + (curr.duration_minutes || 0), 0) || 0
-                    const hours = Math.round(totalMinutes / 60 * 10) / 10 // Round to 1 decimal
+                    // Calculate total study hours (seconds / 3600)
+                    const totalSeconds = sessionsRes.data?.reduce((acc, curr) => acc + (curr.duration || 0), 0) || 0
+                    const hours = Math.round((totalSeconds / 3600) * 10) / 10 // Round to 1 decimal
 
                     // Calculate total quiz points
                     const totalPoints = quizzesRes.data?.reduce((acc, curr) => acc + (curr.score || 0), 0) || 0
@@ -128,7 +128,7 @@ export function Profile() {
     }
 
     return (
-        <div className="space-y-8 animate-fade-in max-w-4xl mx-auto">
+        <div className="space-y-4 animate-fade-in max-w-4xl mx-auto pt-0">
             {/* Header */}
             <div className="flex flex-col md:flex-row items-center gap-6 p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
                 <div className="relative group">

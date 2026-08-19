@@ -50,22 +50,44 @@
   }
 }
 
-/* Custom scrollbar */
+/* Modern, Elegant & Classic Custom Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(96, 61, 217, 0.25) transparent;
+}
+
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-secondary;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground/30 rounded-full;
+  background: rgba(96, 61, 217, 0.22);
+  border-radius: 9999px;
+  transition: all 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-muted-foreground/50;
+  background: linear-gradient(180deg, #603DD9 0%, #9E4CEC 100%);
+  box-shadow: 0 0 10px rgba(96, 61, 217, 0.35);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #4d2fb3 0%, #8738d4 100%);
+}
+
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* Animations */
@@ -74,7 +96,6 @@
     opacity: 0;
     transform: translateY(10px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -85,21 +106,55 @@
   from {
     opacity: 0;
   }
-
   to {
     opacity: 1;
   }
 }
 
 @keyframes pulse-soft {
-
-  0%,
-  100% {
+  0%, 100% {
     opacity: 1;
   }
-
   50% {
     opacity: 0.8;
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-20px) scale(1.05);
+  }
+}
+
+@keyframes float-reverse {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(22px) scale(0.95);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
   }
 }
 
@@ -115,9 +170,31 @@
   animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 10s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 6s ease-in-out infinite;
+}
+
+.animate-marquee {
+  display: flex;
+  width: 200%;
+  animation: marquee 30s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
 /* Gradient backgrounds */
 .gradient-bg {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #603DD9 0%, #9E4CEC 100%);
 }
 
 .gradient-bg-soft {
@@ -126,18 +203,159 @@
 
 /* Glass morphism effect */
 .glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 /* Hover lift effect */
 .hover-lift {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .hover-lift:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 16px 32px rgba(96, 61, 217, 0.08);
+}
+
+/* Ambient Moving Blue Lines & Glow Keyframes */
+@keyframes flow-wave-1 {
+  0% {
+    stroke-dashoffset: 0;
+    transform: translateY(0px) scaleY(1);
+  }
+  50% {
+    stroke-dashoffset: -200;
+    transform: translateY(12px) scaleY(1.04);
+  }
+  100% {
+    stroke-dashoffset: -400;
+    transform: translateY(0px) scaleY(1);
+  }
+}
+
+@keyframes flow-wave-2 {
+  0% {
+    stroke-dashoffset: 0;
+    transform: translateY(0px) scaleY(1);
+  }
+  50% {
+    stroke-dashoffset: 250;
+    transform: translateY(-16px) scaleY(0.96);
+  }
+  100% {
+    stroke-dashoffset: 500;
+    transform: translateY(0px) scaleY(1);
+  }
+}
+
+@keyframes flow-wave-3 {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -300;
+  }
+}
+
+@keyframes stream-line {
+  0% {
+    stroke-dashoffset: 320;
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    stroke-dashoffset: -320;
+    opacity: 0.15;
+  }
+}
+
+@keyframes ambient-drift-1 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(40px, 30px) scale(1.08);
+  }
+  66% {
+    transform: translate(-30px, 20px) scale(0.95);
+  }
+}
+
+@keyframes ambient-drift-2 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(-50px, -35px) scale(1.06);
+  }
+  66% {
+    transform: translate(30px, -20px) scale(0.94);
+  }
+}
+
+@keyframes ambient-drift-3 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(40px, -30px) scale(1.05);
+  }
+}
+
+@keyframes light-beam {
+  0% {
+    transform: translateX(-60%) translateY(-60%) rotate(-12deg);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(60%) translateY(60%) rotate(-12deg);
+    opacity: 0;
+  }
+}
+
+.animate-flow-wave-1 {
+  animation: flow-wave-1 22s ease-in-out infinite;
+  will-change: transform, stroke-dashoffset;
+}
+
+.animate-flow-wave-2 {
+  animation: flow-wave-2 26s ease-in-out infinite;
+  will-change: transform, stroke-dashoffset;
+}
+
+.animate-flow-wave-3 {
+  animation: flow-wave-3 30s linear infinite;
+  will-change: stroke-dashoffset;
+}
+
+.animate-stream-line {
+  animation: stream-line 14s linear infinite;
+  will-change: stroke-dashoffset;
+}
+
+.animate-ambient-drift-1 {
+  animation: ambient-drift-1 20s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-ambient-drift-2 {
+  animation: ambient-drift-2 24s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-ambient-drift-3 {
+  animation: ambient-drift-3 28s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-light-beam {
+  animation: light-beam 18s ease-in-out infinite;
+  will-change: transform, opacity;
 }

@@ -19,11 +19,14 @@ export default defineConfig({
     },
   },
   build: {
+    target: 'es2022',
+    cssCodeSplit: true,
+    minify: 'esbuild',
     rollupOptions: {
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': ['lucide-react', 'framer-motion', 'clsx', 'tailwind-merge'],
+          'ui-vendor': ['lucide-react', 'clsx', 'tailwind-merge', 'sonner'],
           'supabase': ['@supabase/supabase-js'],
         },
       },

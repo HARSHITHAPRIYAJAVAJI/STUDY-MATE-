@@ -19,7 +19,14 @@ import { TimerProvider } from '@/context/TimerContext'
 import { FloatingTimer } from '@/components/FloatingTimer'
 
 function App() {
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(() => {
+        try {
+            const hasAuthToken = Object.keys(localStorage).some(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
+            return hasAuthToken ? true : null
+        } catch {
+            return null
+        }
+    })
 
     useEffect(() => {
         // Check active session
@@ -39,8 +46,8 @@ function App() {
 
     if (isAuthenticated === null) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
+                <div className="w-10 h-10 border-3 border-[#603DD9]/20 border-t-[#603DD9] rounded-full animate-spin"></div>
             </div>
         )
     }

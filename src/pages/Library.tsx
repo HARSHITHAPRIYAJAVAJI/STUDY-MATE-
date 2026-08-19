@@ -139,20 +139,29 @@ export function Library() {
             }))
 
             // 2. Insert into Database
-            const { error: dbError } = await supabase
+            const { data: newDoc, error: dbError } = await supabase
                 .from('documents')
                 .insert({
                     user_id: user.id,
                     title: file.name.replace(`.${fileExt}`, ''),
                     file_path: filePath,
                     language: selectedLanguage,
-                    status: 'uploaded', // Logic: 'uploaded' initially. Analysis happens on demand in Study/Flashcards
+                    status: 'processing',
                     pages: Math.floor(Math.random() * 50) + 1, // Mock page count
                     subject: 'General Study',
-                    summary: 'Pending analysis...',
+                    summary: 'Processing document chunks...',
                 })
+                .select('id')
+                .single();
 
             if (dbError) throw dbError;
+
+            // Trigger backend document chunking and embedding in background
+            if (newDoc?.id) {
+                fetch(`http://127.0.0.1:3001/api/documents/${newDoc.id}/process`, { method: 'POST' })
+                    .then(() => fetchDocuments())
+                    .catch(err => console.warn("Background doc processing warning:", err));
+            }
 
             setUploadProgress(prev => ({
                 ...prev,
@@ -235,17 +244,16 @@ export function Library() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6 animate-fade-in">
-            <div className="max-w-7xl mx-auto space-y-8">
-                {/* Header */}
-                <div className="text-center space-y-4">
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
-                        Document Library
-                    </h1>
-                    <p className="text-slate-600 max-w-2xl mx-auto">
-                        Upload, organize, and manage your study materials with AI-powered content extraction and analysis.
-                    </p>
-                </div>
+        <div className="space-y-4 animate-fade-in max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="text-center space-y-1 pt-0">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-[#603DD9] via-[#7B42E2] to-[#9E4CEC] bg-clip-text text-transparent tracking-tight">
+                    Document Library
+                </h1>
+                <p className="text-slate-500 max-w-lg mx-auto text-xs sm:text-sm font-normal">
+                    Upload and manage study materials with automatic AI summaries, flashcard generation, and concept extraction.
+                </p>
+            </div>
 
                 {/* Upload Zone */}
                 <UploadZone
@@ -285,16 +293,16 @@ export function Library() {
                 )}
 
                 {/* Filters */}
-                <Card className="bg-white shadow-md border-0 rounded-xl overflow-visible">
+                <Card className="relative z-10 bg-white shadow-md border-0 rounded-2xl overflow-visible">
                     <CardContent className="p-4">
                         <div className="flex flex-col md:flex-row gap-4 items-center">
                             <div className="flex-1 w-full md:w-auto relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                                <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                                 <Input
                                     placeholder="Search documents..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-10 h-10 bg-white border-slate-200 focus:border-blue-500 focus:ring-blue-500/20 transition-all"
+                                    className="pl-10 h-10 bg-white border-slate-200 rounded-xl focus:border-[#603DD9] focus:ring-[#603DD9]/20 transition-all font-medium text-xs sm:text-sm"
                                 />
                             </div>
 
@@ -349,7 +357,6 @@ export function Library() {
                         onDocumentRename={handleRename}
                     />
                 </div>
-            </div>
         </div>
     )
 }
