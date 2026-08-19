@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Sparkles, BookOpen, Brain, Target, Users, Clock, TrendingUp, Eye, EyeOff } from 'lucide-react'
+import { BookOpen, Brain, Target, Users, Clock, TrendingUp, Eye, EyeOff } from 'lucide-react'
 
 interface AuthProps {
     onAuth: () => void
@@ -71,9 +71,13 @@ export function Auth({ onAuth }: AuthProps) {
                     <div className="hidden lg:block space-y-8 animate-fade-in">
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-                                    <Sparkles className="w-7 h-7 text-white" />
-                                </div>
+                                <img
+                                    src="/logo-icon.webp"
+                                    alt="StudyMate+ Logo"
+                                    width="56"
+                                    height="56"
+                                    className="w-14 h-14 object-contain drop-shadow-md"
+                                />
                                 <div>
                                     <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                                         StudyMate+
@@ -114,9 +118,13 @@ export function Auth({ onAuth }: AuthProps) {
                     <div className="w-full max-w-md mx-auto space-y-6 animate-slide-in">
                         {/* Mobile Logo */}
                         <div className="lg:hidden text-center mb-8">
-                            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-                                <Sparkles className="w-8 h-8 text-white" />
-                            </div>
+                            <img
+                                src="/logo-icon.webp"
+                                alt="StudyMate+ Logo"
+                                width="64"
+                                height="64"
+                                className="w-16 h-16 mx-auto mb-4 object-contain drop-shadow-lg"
+                            />
                             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                                 StudyMate+
                             </h1>
