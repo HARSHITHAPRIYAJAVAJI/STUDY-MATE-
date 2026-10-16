@@ -178,6 +178,7 @@ export function DocumentViewer({ url, title, isImage }: DocumentViewerProps) {
                     url: url,
                     cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/cmaps/',
                     cMapPacked: true,
+                    standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/standard_fonts/',
                 })
 
                 const doc = await loadingTask.promise

@@ -19,7 +19,9 @@ import {
     Target
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { API_BASE_URL } from '@/lib/api'
 import { toast } from 'sonner'
+import confetti from 'canvas-confetti'
 
 export function Quizzes() {
     const [quizStarted, setQuizStarted] = useState(false)
@@ -37,6 +39,38 @@ export function Quizzes() {
     const [isGenerating, setIsGenerating] = useState(false)
     const [quiz, setQuiz] = useState<any[]>([])
     const [hasAnswered, setHasAnswered] = useState(false)
+
+    // Celebration confetti bursts for correct answers
+    const triggerCelebrationConfetti = () => {
+        try {
+            confetti({
+                particleCount: 80,
+                spread: 85,
+                origin: { y: 0.6 },
+                colors: ['#10B981', '#603DD9', '#F59E0B', '#EC4899', '#3B82F6'],
+                disableForReducedMotion: true,
+            })
+
+            setTimeout(() => {
+                confetti({
+                    particleCount: 40,
+                    angle: 60,
+                    spread: 60,
+                    origin: { x: 0, y: 0.7 },
+                    colors: ['#10B981', '#34D399', '#FBBF24', '#A78BFA'],
+                })
+                confetti({
+                    particleCount: 40,
+                    angle: 120,
+                    spread: 60,
+                    origin: { x: 1, y: 0.7 },
+                    colors: ['#10B981', '#34D399', '#FBBF24', '#A78BFA'],
+                })
+            }, 120)
+        } catch (e) {
+            console.error("Confetti trigger error:", e)
+        }
+    }
 
     useEffect(() => {
         fetchDocuments()
@@ -61,7 +95,7 @@ export function Quizzes() {
 
         setIsGenerating(true)
         try {
-            const response = await fetch('http://127.0.0.1:3001/api/ai/quiz', {
+            const response = await fetch(`${API_BASE_URL}/api/ai/quiz`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -74,13 +108,22 @@ export function Quizzes() {
             const data = await response.json()
             if (!data.success) throw new Error(data.error || "Failed to generate quiz")
 
-            const generatedQuiz = data.quiz.map((q: any) => ({
-                id: Math.random().toString(),
-                question: q.question,
-                options: q.options,
-                correctAnswer: q.options.indexOf(q.correct_answer),
-                explanation: q.explanation || "Correct choice as stated in document context."
-            }))
+            const generatedQuiz = data.quiz.map((q: any) => {
+                const options = Array.isArray(q.options) ? q.options : Object.values(q.options || {});
+                let correctIdx = options.indexOf(q.correct_answer);
+                if (correctIdx === -1) {
+                    correctIdx = options.findIndex((opt: string) => 
+                        String(opt).trim().toLowerCase() === String(q.correct_answer || '').trim().toLowerCase()
+                    );
+                }
+                return {
+                    id: Math.random().toString(),
+                    question: q.question,
+                    options: options,
+                    correctAnswer: correctIdx !== -1 ? correctIdx : 0,
+                    explanation: q.explanation || "Correct choice as stated in document context."
+                };
+            })
 
             if (generatedQuiz.length === 0) throw new Error("No questions generated.")
 
@@ -109,8 +152,14 @@ export function Quizzes() {
         setHasAnswered(true)
         setUserAnswers(prev => ({ ...prev, [currentQuestion]: index }))
 
-        if (index === quiz[currentQuestion].correctAnswer) {
+        const isCorrect = index === quiz[currentQuestion].correctAnswer
+
+        if (isCorrect) {
             setScore(prev => prev + 1)
+            triggerCelebrationConfetti()
+            toast.success("🎉 Correct!", { duration: 2000 })
+        } else {
+            toast.error("Better luck next time!", { duration: 2000 })
         }
     }
 
@@ -167,9 +216,6 @@ export function Quizzes() {
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-[#603DD9] via-[#7B42E2] to-[#9E4CEC] bg-clip-text text-transparent tracking-tight">
                     Smart Quiz Center
                 </h1>
-                <p className="text-slate-500 max-w-lg mx-auto text-xs sm:text-sm font-normal">
-                    Test your knowledge with adaptive AI quizzes generated directly from your study documents.
-                </p>
             </div>
 
             {!quizStarted ? (
@@ -374,6 +420,43 @@ export function Quizzes() {
                                     )
                                 })}
                             </div>
+
+                            {/* Minimal Inline Answer Feedback */}
+                            {hasAnswered && (
+                                <div
+                                    className={`mt-3 p-3 rounded-2xl border text-xs sm:text-sm flex items-center gap-3 animate-in fade-in slide-in-from-top-1 ${
+                                        selectedAnswer === quiz[currentQuestion].correctAnswer
+                                            ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
+                                            : 'bg-rose-50/80 border-rose-200 text-rose-900'
+                                    }`}
+                                >
+                                    <div
+                                        className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 text-white shadow-xs ${
+                                            selectedAnswer === quiz[currentQuestion].correctAnswer ? 'bg-emerald-500' : 'bg-rose-500'
+                                        }`}
+                                    >
+                                        {selectedAnswer === quiz[currentQuestion].correctAnswer ? (
+                                            <CheckCircle2 className="w-4 h-4" />
+                                        ) : (
+                                            <XCircle className="w-4 h-4" />
+                                        )}
+                                    </div>
+                                    <div className="flex-1 leading-snug">
+                                        {selectedAnswer === quiz[currentQuestion].correctAnswer ? (
+                                            <span>
+                                                <strong className="font-bold text-emerald-950">Nicely done!</strong> Correct answer.
+                                            </span>
+                                        ) : (
+                                            <span>
+                                                <strong className="font-bold text-rose-700">Better luck next time!</strong> Correct answer was:{' '}
+                                                <span className="font-bold text-rose-950 underline decoration-rose-300">
+                                                    {quiz[currentQuestion].options[quiz[currentQuestion].correctAnswer]}
+                                                </span>
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Explanation Box on Answer */}
                             {hasAnswered && (

@@ -25,6 +25,7 @@ import {
     Loader2,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { API_BASE_URL } from '@/lib/api'
 import { Link } from 'react-router-dom'
 
 const DocumentViewer = lazy(() => import('@/components/study/DocumentViewer').then(m => ({ default: m.DocumentViewer })))
@@ -364,7 +365,7 @@ export function Study() {
         }
 
         try {
-            const response = await fetch('http://127.0.0.1:3001/api/chat', {
+            const response = await fetch(`${API_BASE_URL}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -374,7 +375,8 @@ export function Study() {
                 }),
             })
             const data = await response.json()
-            if (data.error) throw new Error(data.error)
+            if (!response.ok && data.error) throw new Error(data.error)
+            if (data.error && !data.response) throw new Error(data.error)
 
             const aiMessage = {
                 id: (Date.now() + 1).toString(),
@@ -424,7 +426,7 @@ export function Study() {
         }
 
         try {
-            const response = await fetch('http://127.0.0.1:3001/api/chat', {
+            const response = await fetch(`${API_BASE_URL}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

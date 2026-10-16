@@ -13,6 +13,18 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: false, // Allow fallback if 5173 is busy
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:3001',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/health': {
+        target: 'http://127.0.0.1:3001',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
     hmr: {
       protocol: 'ws',
       host: 'localhost',

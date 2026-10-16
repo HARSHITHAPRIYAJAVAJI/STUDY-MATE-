@@ -19,30 +19,37 @@ import { TimerProvider } from '@/context/TimerContext'
 import { FloatingTimer } from '@/components/FloatingTimer'
 
 function App() {
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(() => {
-        try {
-            const hasAuthToken = Object.keys(localStorage).some(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
-            return hasAuthToken ? true : null
-        } catch {
-            return null
-        }
-    })
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
 
     useEffect(() => {
         // Check active session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setIsAuthenticated(!!session)
-        })
+        supabase.auth.getSession().then(({ data: { session }, error }) => {
+            if (error || !session) {
+                if (error) {
+                    console.warn("Auth session recovery:", error.message);
+                    supabase.auth.signOut().catch(() => {});
+                }
+                setIsAuthenticated(false);
+            } else {
+                setIsAuthenticated(true);
+            }
+        }).catch(() => {
+            setIsAuthenticated(false);
+        });
 
         // Listen for changes
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
-            setIsAuthenticated(!!session)
-        })
+        } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
+                setIsAuthenticated(false);
+            } else {
+                setIsAuthenticated(!!session);
+            }
+        });
 
-        return () => subscription.unsubscribe()
-    }, [])
+        return () => subscription.unsubscribe();
+    }, []);
 
     if (isAuthenticated === null) {
         return (

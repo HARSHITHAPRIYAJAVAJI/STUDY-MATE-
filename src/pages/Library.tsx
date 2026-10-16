@@ -4,6 +4,7 @@ import DocumentGrid from '@/components/library/DocumentGrid'
 import { Search, FileText, BookOpen, Languages } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { supabase } from '@/lib/supabase'
+import { API_BASE_URL } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { Progress } from "@/components/ui/Progress"
@@ -158,7 +159,7 @@ export function Library() {
 
             // Trigger backend document chunking and embedding in background
             if (newDoc?.id) {
-                fetch(`http://127.0.0.1:3001/api/documents/${newDoc.id}/process`, { method: 'POST' })
+                fetch(`${API_BASE_URL}/api/documents/${newDoc.id}/process`, { method: 'POST' })
                     .then(() => fetchDocuments())
                     .catch(err => console.warn("Background doc processing warning:", err));
             }

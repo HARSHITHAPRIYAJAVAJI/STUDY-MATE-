@@ -50,6 +50,34 @@
   }
 }
 
+/* Natural & Elegant Text Selection */
+::selection {
+  background-color: rgba(96, 61, 217, 0.2);
+}
+
+::-moz-selection {
+  background-color: rgba(96, 61, 217, 0.2);
+}
+
+/* On purple / dark gradient sections: soft translucent highlight, keeping text natural white */
+.text-white ::selection,
+.text-white::selection,
+[class*="from-[#603DD9]"] ::selection,
+[class*="from-[#603DD9]"]::selection,
+[class*="bg-[#603DD9]"] ::selection,
+[class*="bg-[#603DD9]"]::selection {
+  background-color: rgba(255, 255, 255, 0.28) !important;
+}
+
+.text-white ::-moz-selection,
+.text-white::-moz-selection,
+[class*="from-[#603DD9]"] ::-moz-selection,
+[class*="from-[#603DD9]"]::-moz-selection,
+[class*="bg-[#603DD9]"] ::-moz-selection,
+[class*="bg-[#603DD9]"]::-moz-selection {
+  background-color: rgba(255, 255, 255, 0.28) !important;
+}
+
 /* Modern, Elegant & Classic Custom Scrollbar */
 * {
   scrollbar-width: thin;

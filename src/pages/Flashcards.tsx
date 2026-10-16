@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { supabase } from '@/lib/supabase'
+import { API_BASE_URL } from '@/lib/api'
 import {
     CreditCard,
     ChevronDown,
@@ -71,7 +72,16 @@ export function Flashcards() {
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false })
 
-            if (existingCards) setFlashcards(existingCards)
+            if (existingCards) {
+                const seen = new Set<string>()
+                const uniqueCards = existingCards.filter(card => {
+                    const norm = card.question?.trim().toLowerCase().replace(/[?.,!]/g, '')
+                    if (!norm || seen.has(norm)) return false
+                    seen.add(norm)
+                    return true
+                })
+                setFlashcards(uniqueCards)
+            }
         } catch (error) {
             console.error("Error fetching flashcards:", error)
         } finally {
@@ -154,7 +164,7 @@ export function Flashcards() {
 
         setIsGenerating(true)
         try {
-            const response = await fetch('http://127.0.0.1:3001/api/ai/flashcards', {
+            const response = await fetch(`${API_BASE_URL}/api/ai/flashcards`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -172,31 +182,54 @@ export function Flashcards() {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) return
 
-            // Save generated flashcards with document_id to Supabase
+            // Save generated flashcards with document_id to Supabase (prevent duplicate questions)
             const selectedDoc = documents.find(d => d.id.toString() === selectedDocId.toString())
-            const newCardsForDb = data.flashcards.map((card: any) => ({
-                user_id: user.id,
-                document_id: selectedDocId,
-                question: card.question,
-                answer: card.answer,
-                tag: selectedDoc ? selectedDoc.title : (card.tag || 'AI Generated'),
-                difficulty: 'medium'
-            }))
+            const existingQMap = new Set(flashcards.map(c => c.question?.trim().toLowerCase().replace(/[?.,!]/g, '')))
+            
+            const uniqueCardsForDb = data.flashcards
+                .filter((card: any) => {
+                    const norm = card.question?.trim().toLowerCase().replace(/[?.,!]/g, '')
+                    if (!norm || existingQMap.has(norm)) return false
+                    existingQMap.add(norm)
+                    return true
+                })
+                .map((card: any) => ({
+                    user_id: user.id,
+                    document_id: selectedDocId,
+                    question: card.question,
+                    answer: card.answer,
+                    tag: selectedDoc ? selectedDoc.title : (card.tag || 'AI Generated'),
+                    difficulty: 'medium'
+                }))
+
+            if (uniqueCardsForDb.length === 0) {
+                toast.info("All generated flashcard questions already exist in your deck!")
+                return
+            }
 
             const { data: insertedCards, error } = await supabase
                 .from('flashcards')
-                .insert(newCardsForDb)
+                .insert(uniqueCardsForDb)
                 .select()
 
             if (error) throw error
 
             if (insertedCards && insertedCards.length > 0) {
-                setFlashcards(prev => [...insertedCards, ...prev])
+                setFlashcards(prev => {
+                    const seen = new Set<string>()
+                    const combined = [...insertedCards, ...prev]
+                    return combined.filter(c => {
+                        const norm = c.question?.trim().toLowerCase().replace(/[?.,!]/g, '')
+                        if (!norm || seen.has(norm)) return false
+                        seen.add(norm)
+                        return true
+                    })
+                })
                 // Automatically switch to the generated document's deck
                 setActiveDeckId(selectedDocId)
                 setCurrentCard(0)
                 setFlipped(false)
-                toast.success(`Generated ${insertedCards.length} new flashcards for ${selectedDoc?.title || 'Document'}!`)
+                toast.success(`Generated ${insertedCards.length} new unique flashcard${insertedCards.length > 1 ? 's' : ''} for ${selectedDoc?.title || 'Document'}!`)
             }
 
         } catch (error: any) {

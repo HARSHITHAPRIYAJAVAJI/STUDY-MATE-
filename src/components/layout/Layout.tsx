@@ -7,7 +7,7 @@ export function Layout() {
     const isStudyPage = location.pathname === '/study'
 
     return (
-        <div className={`${isStudyPage ? 'h-screen overflow-hidden' : 'min-h-screen'} bg-[#FAFAFC] flex flex-col antialiased relative selection:bg-[#603DD9]/15 selection:text-[#603DD9]`}>
+        <div className={`${isStudyPage ? 'h-screen overflow-hidden' : 'min-h-screen'} bg-[#FAFAFC] flex flex-col antialiased relative`}>
             {/* Minimal Ambient Moving Blue Lines & Soft Glow */}
             <AmbientBackground />
 
