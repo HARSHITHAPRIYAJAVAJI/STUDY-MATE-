@@ -195,6 +195,7 @@ ALTER TABLE quiz_questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE study_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE study_plan_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE focus_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE study_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE collab_rooms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE collab_room_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_jobs ENABLE ROW LEVEL SECURITY;
@@ -322,6 +323,19 @@ CREATE POLICY "Users can view own sessions" ON focus_sessions FOR SELECT USING (
 
 DROP POLICY IF EXISTS "Users can insert own sessions" ON focus_sessions;
 CREATE POLICY "Users can insert own sessions" ON focus_sessions FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Study sessions policies
+DROP POLICY IF EXISTS "Users can view own study sessions" ON study_sessions;
+CREATE POLICY "Users can view own study sessions" ON study_sessions FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own study sessions" ON study_sessions;
+CREATE POLICY "Users can insert own study sessions" ON study_sessions FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own study sessions" ON study_sessions;
+CREATE POLICY "Users can update own study sessions" ON study_sessions FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own study sessions" ON study_sessions;
+CREATE POLICY "Users can delete own study sessions" ON study_sessions FOR DELETE USING (auth.uid() = user_id);
 
 -- Collaboration rooms policies
 DROP POLICY IF EXISTS "Users can view rooms they own or are members of" ON collab_rooms;

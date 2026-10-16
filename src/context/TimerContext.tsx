@@ -160,16 +160,20 @@ export function TimerProvider({ children }: { children: ReactNode }) {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) return
 
-            await supabase.from('study_sessions').insert({
+            const { error: insertError } = await supabase.from('study_sessions').insert({
                 user_id: user.id,
                 duration: secondsToSave,
                 subject: isCompleted ? 'Focus Session (Completed)' : 'Focus Session'
             })
+
+            if (insertError) {
+                console.warn("Study session save note:", insertError.message || insertError)
+                return
+            }
+
             await refreshStats()
         } catch (err) {
-            console.error("Failed to flush timer seconds:", err)
-            // Restore unsaved seconds if insert failed
-            pendingSecondsRef.current += secondsToSave
+            console.warn("Failed to flush timer seconds:", err)
         }
     }, [refreshStats])
 

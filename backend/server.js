@@ -5,9 +5,15 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const express = require('express')
 const cors = require('cors')
 const { createClient } = require('@supabase/supabase-js')
-const pdf = require('pdf-parse');
+let pdf;
+try {
+    pdf = require('pdf-parse');
+} catch (_) {}
 const axios = require('axios');
-const Tesseract = require('tesseract.js');
+let Tesseract;
+try {
+    Tesseract = require('tesseract.js');
+} catch (_) {}
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -29,8 +35,8 @@ const PRIMARY_MODEL = "Qwen/Qwen2.5-72B-Instruct";
 const BACKUP_MODEL = "meta-llama/Llama-3.3-70B-Instruct";
 
 // Supabase Setup
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://qwzreaommojtkfrzagwu.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'sb_publishable_hqwD-bTg0ysKbK7c2vdthg_Z8gvw6kX';
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -552,12 +558,18 @@ async function processDocument(docId) {
 }
 
 // --- Routes ---
+const router = express.Router();
 
-app.get('/health', (req, res) => {
-    res.json({ status: 'ok', ocr: 'enabled' })
-})
+router.get(['/health', '/api/health'], (req, res) => {
+    res.json({
+        status: 'ok',
+        ocr: Tesseract ? 'enabled' : 'disabled',
+        ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.GROQ_API_KEY ? 'groq' : 'fallback',
+        time: new Date().toISOString()
+    });
+});
 
-app.post('/api/documents/:id/process', async (req, res) => {
+router.post(['/documents/:id/process', '/api/documents/:id/process'], async (req, res) => {
     const docId = req.params.id;
     try {
         const result = await processDocument(docId);
@@ -568,7 +580,7 @@ app.post('/api/documents/:id/process', async (req, res) => {
     }
 });
 
-app.post('/api/chat', async (req, res) => {
+router.post(['/chat', '/api/chat'], async (req, res) => {
     try {
         const { message, documentIds = [], conversationHistory = [] } = req.body;
         let context = "";
@@ -665,7 +677,7 @@ Do not refuse to answer unless the question is harmful.`;
     }
 });
 
-app.post('/api/ai/flashcards', async (req, res) => {
+router.post(['/ai/flashcards', '/api/ai/flashcards'], async (req, res) => {
     try {
         const { documentId, count = 5 } = req.body;
         const requestedCount = Math.max(1, Math.min(parseInt(count) || 5, 20));
@@ -718,7 +730,7 @@ Return ONLY a valid JSON object in this format:
     }
 });
 
-app.post('/api/ai/quiz', async (req, res) => {
+router.post(['/ai/quiz', '/api/ai/quiz'], async (req, res) => {
     try {
         const { documentId, count = 5, difficulty = 'medium' } = req.body;
         const requestedCount = Math.max(1, Math.min(parseInt(count) || 5, 20));
@@ -821,7 +833,7 @@ Return ONLY a valid JSON object in this format:
 });
 
 // AI Study Plan Generator Route
-app.post('/api/ai/study-plan', async (req, res) => {
+router.post(['/ai/study-plan', '/api/ai/study-plan'], async (req, res) => {
     try {
         const { title, documentIds, deadline, hoursPerDay } = req.body;
         if (!title) return res.status(400).json({ error: "Plan title is required" });
@@ -883,6 +895,14 @@ Return ONLY a valid JSON object in this exact format:
     }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 StudyMate+ Backend running on http://127.0.0.1:${PORT}`)
-})
+// Mount router on both '/api' and root '/'
+app.use('/api', router);
+app.use('/', router);
+
+if (require.main === module) {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`🚀 StudyMate+ Backend running on http://127.0.0.1:${PORT}`);
+    });
+}
+
+module.exports = app;
