@@ -485,7 +485,28 @@ async function callAI(messages, retries = 3, options = {}) {
     return `👋 **StudyMate AI Notice**\n\nThe backend server is connected and working, but no AI response could be generated with the configured API keys.\n\n### ⚡ Quick Fix:\n1. Verify your \`GEMINI_API_KEY\` in your \`.env\` file.\n2. Ensure your key has access to Gemini 2.5 Flash at [Google AI Studio](https://aistudio.google.com/apikey).\n3. Restart the backend server.`;
 }
 
-// --- Document Processing Helper ---
+async function parsePdfBuffer(buffer) {
+    if (typeof pdf === 'function') {
+        const data = await pdf(buffer);
+        return data.text || '';
+    }
+    if (pdf && typeof pdf.default === 'function') {
+        const data = await pdf.default(buffer);
+        return data.text || '';
+    }
+    try {
+        const rawPdf = require('pdf-parse');
+        if (typeof rawPdf === 'function') {
+            const data = await rawPdf(buffer);
+            return data.text || '';
+        }
+        if (rawPdf && typeof rawPdf.default === 'function') {
+            const data = await rawPdf.default(buffer);
+            return data.text || '';
+        }
+    } catch (_) {}
+    throw new Error("PDF parser function could not be loaded");
+}
 
 async function processDocument(docId, db = supabase) {
     console.log(`📄 Processing document: ${docId}`);
@@ -512,8 +533,7 @@ async function processDocument(docId, db = supabase) {
 
     if (lowerPath.endsWith('.pdf')) {
         console.log("📑 Processing PDF...");
-        const pdfData = await pdf(buffer);
-        text = pdfData.text;
+        text = await parsePdfBuffer(buffer);
     } else if (lowerPath.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
         console.log("🖼️ Processing IMAGE with OCR...");
         const { data: { text: extractedText } } = await Tesseract.recognize(buffer, 'eng');
