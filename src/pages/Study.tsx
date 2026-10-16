@@ -25,7 +25,7 @@ import {
     Loader2,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { API_BASE_URL } from '@/lib/api'
+import { API_BASE_URL, fetchWithAuth } from '@/lib/api'
 import { Link } from 'react-router-dom'
 
 const DocumentViewer = lazy(() => import('@/components/study/DocumentViewer').then(m => ({ default: m.DocumentViewer })))
@@ -365,9 +365,8 @@ export function Study() {
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/chat`, {
+            const response = await fetchWithAuth(`${API_BASE_URL}/api/chat`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message: message,
                     documentIds: selectedDocuments,
@@ -426,9 +425,8 @@ export function Study() {
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/chat`, {
+            const response = await fetchWithAuth(`${API_BASE_URL}/api/chat`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message: editText,
                     documentIds: selectedDocuments,

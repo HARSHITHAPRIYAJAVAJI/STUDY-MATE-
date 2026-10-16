@@ -19,7 +19,7 @@ import {
     Target
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { API_BASE_URL } from '@/lib/api'
+import { API_BASE_URL, fetchWithAuth } from '@/lib/api'
 import { toast } from 'sonner'
 import confetti from 'canvas-confetti'
 
@@ -95,9 +95,8 @@ export function Quizzes() {
 
         setIsGenerating(true)
         try {
-            const response = await fetch(`${API_BASE_URL}/api/ai/quiz`, {
+            const response = await fetchWithAuth(`${API_BASE_URL}/api/ai/quiz`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     documentId: selectedDocId,
                     count: questionCount,

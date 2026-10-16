@@ -17,7 +17,7 @@ import {
     Target,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { API_BASE_URL } from '@/lib/api'
+import { API_BASE_URL, fetchWithAuth } from '@/lib/api'
 import { toast } from 'sonner'
 
 interface PlanTask {
@@ -122,9 +122,8 @@ export function Planner() {
         setIsGenerating(true)
         try {
             // Call AI endpoint to generate smart tasks
-            const response = await fetch(`${API_BASE_URL}/api/ai/study-plan`, {
+            const response = await fetchWithAuth(`${API_BASE_URL}/api/ai/study-plan`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     title: planTitle,
                     documentIds: selectedDocIds,

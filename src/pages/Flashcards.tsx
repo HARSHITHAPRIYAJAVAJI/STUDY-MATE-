@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { supabase } from '@/lib/supabase'
-import { API_BASE_URL } from '@/lib/api'
+import { API_BASE_URL, fetchWithAuth } from '@/lib/api'
 import {
     CreditCard,
     ChevronDown,
@@ -164,9 +164,8 @@ export function Flashcards() {
 
         setIsGenerating(true)
         try {
-            const response = await fetch(`${API_BASE_URL}/api/ai/flashcards`, {
+            const response = await fetchWithAuth(`${API_BASE_URL}/api/ai/flashcards`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     documentId: selectedDocId,
                     count: cardCount

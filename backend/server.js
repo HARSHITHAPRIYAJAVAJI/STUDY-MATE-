@@ -42,7 +42,24 @@ const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supaba
 if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
     console.log("🔓 Backend using Service Role Key (Bypassing RLS)");
 } else {
-    console.warn("⚠️ Backend using Anon Key. Document processing might fail if RLS is enabled.");
+    console.warn("⚠️ Backend using Anon Key. Forwarding user JWT when available for RLS.");
+}
+
+function getSupabaseClient(req) {
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        return supabase;
+    }
+    const authHeader = req?.headers?.authorization;
+    if (authHeader && supabaseUrl && supabaseKey) {
+        return createClient(supabaseUrl, supabaseKey, {
+            global: {
+                headers: {
+                    Authorization: authHeader
+                }
+            }
+        });
+    }
+    return supabase;
 }
 
 // Log detected AI keys
@@ -476,10 +493,10 @@ async function callAI(messages, retries = 3, options = {}) {
 
 // --- Document Processing Helper ---
 
-async function processDocument(docId) {
+async function processDocument(docId, db = supabase) {
     console.log(`📄 Processing document: ${docId}`);
 
-    const { data: doc, error: fetchError } = await supabase
+    const { data: doc, error: fetchError } = await db
         .from('documents')
         .select('*')
         .eq('id', docId)
@@ -490,7 +507,7 @@ async function processDocument(docId) {
         throw new Error("Document not found");
     }
 
-    const signedUrlResult = await supabase.storage.from('documents').createSignedUrl(doc.file_path, 3600);
+    const signedUrlResult = await db.storage.from('documents').createSignedUrl(doc.file_path, 3600);
     if (signedUrlResult.error) throw signedUrlResult.error;
 
     const fileResponse = await axios.get(signedUrlResult.data.signedUrl, { responseType: 'arraybuffer' });
@@ -517,7 +534,7 @@ async function processDocument(docId) {
     }
 
     // Clear and Update Chunks
-    await supabase.from('document_chunks').delete().eq('document_id', docId);
+    await db.from('document_chunks').delete().eq('document_id', docId);
 
     const chunks = chunkText(text, 500);
     console.log(`Debug: Split into ${chunks.length} chunks.`);
@@ -539,7 +556,7 @@ async function processDocument(docId) {
             chunkData.embedding = embedding;
         }
 
-        const { error: insertError } = await supabase.from('document_chunks').insert(chunkData);
+        const { error: insertError } = await db.from('document_chunks').insert(chunkData);
 
         if (insertError) {
             console.error(`❌ Insert Error Chunk ${i}:`, insertError.message);
@@ -552,7 +569,7 @@ async function processDocument(docId) {
         throw new Error("Failed to insert document chunks into database.");
     }
 
-    await supabase.from('documents').update({ status: 'ready' }).eq('id', docId);
+    await db.from('documents').update({ status: 'ready' }).eq('id', docId);
     console.log(`🎉 Processed ${successCount}/${chunks.length} chunks for doc: ${doc.title || docId}`);
     return { success: true, chunks: successCount };
 }
@@ -571,8 +588,9 @@ router.get(['/health', '/api/health'], (req, res) => {
 
 router.post(['/documents/:id/process', '/api/documents/:id/process'], async (req, res) => {
     const docId = req.params.id;
+    const db = getSupabaseClient(req);
     try {
-        const result = await processDocument(docId);
+        const result = await processDocument(docId, db);
         res.json(result);
     } catch (error) {
         console.error("❌ Processing error:", error.message);
@@ -582,13 +600,14 @@ router.post(['/documents/:id/process', '/api/documents/:id/process'], async (req
 
 router.post(['/chat', '/api/chat'], async (req, res) => {
     try {
+        const db = getSupabaseClient(req);
         const { message, documentIds = [], conversationHistory = [] } = req.body;
         let context = "";
 
         if (documentIds.length > 0) {
             // 1. Ensure all selected documents have chunks processed
             for (const docId of documentIds) {
-                const { count } = await supabase
+                const { count } = await db
                     .from('document_chunks')
                     .select('id', { count: 'exact', head: true })
                     .eq('document_id', docId);
@@ -596,7 +615,7 @@ router.post(['/chat', '/api/chat'], async (req, res) => {
                 if (!count || count === 0) {
                     console.log(`⚠️ Document ${docId} has no chunks. Auto-processing on demand...`);
                     try {
-                        await processDocument(docId);
+                        await processDocument(docId, db);
                     } catch (err) {
                         console.error(`⚠️ Auto-process failed for document ${docId}:`, err.message);
                     }
@@ -607,7 +626,7 @@ router.post(['/chat', '/api/chat'], async (req, res) => {
             let chunks = [];
             const queryEmbedding = await getEmbedding(message);
             if (queryEmbedding) {
-                const { data: matchedChunks, error: rpcError } = await supabase.rpc('match_document_chunks', {
+                const { data: matchedChunks, error: rpcError } = await db.rpc('match_document_chunks', {
                     query_embedding: queryEmbedding,
                     match_threshold: 0.05,
                     match_count: 15,
@@ -622,7 +641,7 @@ router.post(['/chat', '/api/chat'], async (req, res) => {
             // 3. Fallback to direct chunk fetch if semantic search returned no chunks
             if (chunks.length === 0) {
                 console.log("ℹ️ Semantic search returned 0 chunks. Falling back to direct document chunks...");
-                const { data: directChunks } = await supabase
+                const { data: directChunks } = await db
                     .from('document_chunks')
                     .select('content, page_number')
                     .in('document_id', documentIds)
@@ -679,11 +698,12 @@ Do not refuse to answer unless the question is harmful.`;
 
 router.post(['/ai/flashcards', '/api/ai/flashcards'], async (req, res) => {
     try {
+        const db = getSupabaseClient(req);
         const { documentId, count = 5 } = req.body;
         const requestedCount = Math.max(1, Math.min(parseInt(count) || 5, 20));
 
         // 1. Ensure document has chunks
-        let { data: chunks } = await supabase
+        let { data: chunks } = await db
             .from('document_chunks')
             .select('content')
             .eq('document_id', documentId)
@@ -691,8 +711,8 @@ router.post(['/ai/flashcards', '/api/ai/flashcards'], async (req, res) => {
 
         if (!chunks || chunks.length === 0) {
             console.log(`⚠️ Document ${documentId} has no chunks for Flashcards. Starting Auto-Analysis...`);
-            await processDocument(documentId);
-            const refetched = await supabase.from('document_chunks').select('content').eq('document_id', documentId).limit(15);
+            await processDocument(documentId, db);
+            const refetched = await db.from('document_chunks').select('content').eq('document_id', documentId).limit(15);
             chunks = refetched.data || [];
         }
 
@@ -732,11 +752,12 @@ Return ONLY a valid JSON object in this format:
 
 router.post(['/ai/quiz', '/api/ai/quiz'], async (req, res) => {
     try {
+        const db = getSupabaseClient(req);
         const { documentId, count = 5, difficulty = 'medium' } = req.body;
         const requestedCount = Math.max(1, Math.min(parseInt(count) || 5, 20));
 
         // 1. Ensure document has chunks
-        let { data: chunks } = await supabase
+        let { data: chunks } = await db
             .from('document_chunks')
             .select('content')
             .eq('document_id', documentId)
@@ -744,8 +765,8 @@ router.post(['/ai/quiz', '/api/ai/quiz'], async (req, res) => {
 
         if (!chunks || chunks.length === 0) {
             console.log(`⚠️ Document ${documentId} has no chunks for Quiz. Starting Auto-Analysis...`);
-            await processDocument(documentId);
-            const refetched = await supabase.from('document_chunks').select('content').eq('document_id', documentId).limit(15);
+            await processDocument(documentId, db);
+            const refetched = await db.from('document_chunks').select('content').eq('document_id', documentId).limit(15);
             chunks = refetched.data || [];
         }
 
@@ -835,6 +856,7 @@ Return ONLY a valid JSON object in this format:
 // AI Study Plan Generator Route
 router.post(['/ai/study-plan', '/api/ai/study-plan'], async (req, res) => {
     try {
+        const db = getSupabaseClient(req);
         const { title, documentIds, deadline, hoursPerDay } = req.body;
         if (!title) return res.status(400).json({ error: "Plan title is required" });
 
@@ -842,14 +864,14 @@ router.post(['/ai/study-plan', '/api/ai/study-plan'], async (req, res) => {
         let contextSnippets = [];
 
         if (documentIds && documentIds.length > 0) {
-            const { data: docs } = await supabase
+            const { data: docs } = await db
                 .from('documents')
                 .select('id, title')
                 .in('id', documentIds);
 
             if (docs) docTitles = docs.map(d => d.title);
 
-            const { data: chunks } = await supabase
+            const { data: chunks } = await db
                 .from('document_chunks')
                 .select('content')
                 .in('document_id', documentIds)
