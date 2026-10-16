@@ -22,29 +22,28 @@ function App() {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
 
     useEffect(() => {
-        // Check active session
-        supabase.auth.getSession().then(({ data: { session }, error }) => {
-            if (error || !session) {
-                if (error) {
-                    console.warn("Auth session recovery:", error.message);
-                    supabase.auth.signOut().catch(() => {});
-                }
+        // Check active session with server validation
+        supabase.auth.getUser().then(({ data: { user }, error }) => {
+            if (error || !user) {
+                console.warn("Auth token expired or invalid:", error?.message);
+                supabase.auth.signOut().catch(() => {});
                 setIsAuthenticated(false);
             } else {
                 setIsAuthenticated(true);
             }
         }).catch(() => {
+            supabase.auth.signOut().catch(() => {});
             setIsAuthenticated(false);
         });
 
         // Listen for changes
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
+        } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_OUT' || (!session && event === 'TOKEN_REFRESHED')) {
                 setIsAuthenticated(false);
-            } else {
-                setIsAuthenticated(!!session);
+            } else if (session) {
+                setIsAuthenticated(true);
             }
         });
 

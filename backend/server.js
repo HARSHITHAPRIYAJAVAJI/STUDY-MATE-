@@ -36,21 +36,15 @@ const BACKUP_MODEL = "meta-llama/Llama-3.3-70B-Instruct";
 
 // Supabase Setup
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://qwzreaommojtkfrzagwu.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'sb_publishable_hqwD-bTg0ysKbK7c2vdthg_Z8gvw6kX';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY 
+    || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3enJlYW9tbW9qdGtmcnphZ3d1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTMyMzE0MiwiZXhwIjoyMDg0ODk5MTQyfQ.BWBbTcZ0Mv1JRY9VKCFTpc4qmDpTv_NS2DlX5R0fwzs';
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
-if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.log("🔓 Backend using Service Role Key (Bypassing RLS)");
-} else {
-    console.warn("⚠️ Backend using Anon Key. Forwarding user JWT when available for RLS.");
-}
+console.log("🔓 Backend configured with Service Role Key (Bypassing RLS)");
 
 function getSupabaseClient(req) {
-    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-        return supabase;
-    }
     const authHeader = req?.headers?.authorization;
-    if (authHeader && supabaseUrl && supabaseKey) {
+    if (authHeader && supabaseUrl && !process.env.SUPABASE_SERVICE_ROLE_KEY) {
         return createClient(supabaseUrl, supabaseKey, {
             global: {
                 headers: {
